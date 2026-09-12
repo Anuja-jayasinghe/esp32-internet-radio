@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 520" width="880" height="520" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="880" height="520" fill="#ffffff"/>
+
+  <text x="30" y="34" font-size="19" font-weight="600" fill="#111827">ESP32 → PCM5102 (GY-PCM5102) I2S wiring</text>
+  <text x="30" y="56" font-size="12.5" fill="#6b7280">DAC header drawn in physical left-to-right order: VIN, GND, LCK, DIN, BCK, SCK</text>
+
+  <!-- ESP32 board -->
+  <rect x="100" y="130" width="180" height="250" rx="8" fill="#eef2ff" stroke="#4f46e5" stroke-width="2"/>
+  <text x="190" y="112" font-size="13.5" font-weight="600" fill="#4338ca" text-anchor="middle">ESP32 NodeMCU</text>
+  <text x="190" y="405" font-size="11.5" fill="#6b7280" text-anchor="middle">DevKit V1 (30-pin)</text>
+
+  <!-- ESP32 pads + labels -->
+  <g font-size="12" fill="#1f2937" text-anchor="end">
+    <text x="266" y="174">VIN</text>
+    <text x="266" y="214">GND</text>
+    <text x="266" y="254">GPIO25</text>
+    <text x="266" y="294">GPIO27</text>
+    <text x="266" y="334">GPIO26</text>
+  </g>
+  <g fill="#374151">
+    <rect x="274" y="164" width="12" height="12" rx="2"/>
+    <rect x="274" y="204" width="12" height="12" rx="2"/>
+    <rect x="274" y="244" width="12" height="12" rx="2"/>
+    <rect x="274" y="284" width="12" height="12" rx="2"/>
+    <rect x="274" y="324" width="12" height="12" rx="2"/>
+  </g>
+
+  <!-- PCM5102 board -->
+  <rect x="520" y="155" width="300" height="200" rx="8" fill="#f5f3ff" stroke="#7c3aed" stroke-width="2"/>
+  <rect x="596" y="256" width="150" height="56" rx="4" fill="#ddd6fe" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="671" y="290" font-size="13" font-weight="600" fill="#5b21b6" text-anchor="middle">PCM5102A</text>
+  <text x="670" y="380" font-size="13.5" font-weight="600" fill="#6d28d9" text-anchor="middle">GY-PCM5102 DAC</text>
+  <text x="670" y="401" font-size="11.5" fill="#6b7280" text-anchor="middle">3.5mm out → powered speaker</text>
+
+  <!-- DAC header pads (physical order) -->
+  <g fill="#374151">
+    <rect x="554" y="164" width="12" height="12" rx="2"/>
+    <rect x="594" y="164" width="12" height="12" rx="2"/>
+    <rect x="634" y="164" width="12" height="12" rx="2"/>
+    <rect x="674" y="164" width="12" height="12" rx="2"/>
+    <rect x="714" y="164" width="12" height="12" rx="2"/>
+    <rect x="754" y="164" width="12" height="12" rx="2"/>
+  </g>
+  <g font-size="11.5" fill="#1f2937" text-anchor="middle">
+    <text x="560" y="194">VIN</text>
+    <text x="600" y="194">GND</text>
+    <text x="640" y="194">LCK</text>
+    <text x="680" y="194">DIN</text>
+    <text x="720" y="194">BCK</text>
+    <text x="760" y="194">SCK</text>
+  </g>
+
+  <!-- Wires: ESP32 right edge -> DAC header top (no crossings) -->
+  <g fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M286 170 H388 V150 H560 V170" stroke="#dc2626"/>
+    <path d="M286 210 H366 V134 H600 V170" stroke="#111827"/>
+    <path d="M286 250 H344 V118 H640 V170" stroke="#2563eb"/>
+    <path d="M286 290 H322 V102 H680 V170" stroke="#059669"/>
+    <path d="M286 330 H300 V86  H720 V170" stroke="#ea580c"/>
+  </g>
+
+  <!-- SCK -> GND bridge, on the DAC board itself -->
+  <path d="M760 176 V228 H600 V176" fill="none" stroke="#db2777" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="760" cy="176" r="4" fill="#db2777"/>
+  <circle cx="600" cy="176" r="4" fill="#db2777"/>
+  <text x="680" y="246" font-size="11.5" font-weight="600" fill="#be185d" text-anchor="middle">SCK → GND bridge (on the DAC board)</text>
+
+  <!-- Notes -->
+  <rect x="30" y="424" width="820" height="72" rx="6" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="46" y="448" font-size="12.5" font-weight="600" fill="#92400e">Two mandatory board mods</text>
+  <text x="46" y="468" font-size="12" fill="#78350f">1. Bridge SCK to GND on the DAC board (pink). ESP32-audioI2S outputs no master clock, so the PCM5102A must run in internal PLL mode.</text>
+  <text x="46" y="486" font-size="12" fill="#78350f">2. Move the XSMT (H3L) solder blob from the GND-side pad to the 3.3V-side pad to unmute output. Otherwise: clean serial log, silent speaker.</text>
+</svg>

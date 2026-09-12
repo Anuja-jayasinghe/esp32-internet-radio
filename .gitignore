@@ -1,0 +1,15 @@
+# Local credentials — keep real Wi-Fi details out of the repo
+secrets.h
+config.h
+*.local.h
+
+# Arduino IDE build output
+build/
+*.hex
+*.bin
+*.elf
+*.map
+
+# OS noise
+.DS_Store
+Thumbs.db
