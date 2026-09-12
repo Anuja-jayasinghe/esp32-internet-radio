@@ -46,7 +46,20 @@ Full detail, the diagram, and the reasoning: **[docs/wiring.md](docs/wiring.md)*
 3. Open `firmware/esp32_internet_radio/esp32_internet_radio.ino`.
 4. Fill in `WIFI_SSID` and `WIFI_PASSWORD`, and set `STREAM_URL` if you want a different
    station.
-5. Select board **ESP32 Dev Module**, pick the serial port, and upload.
+5. Select board **ESP32 Dev Module**, pick the serial port, and set
+   **Tools → Partition Scheme → Huge APP (3MB No OTA/1MB SPIFFS)** — see below, this one's
+   required.
+6. Upload.
+
+### Partition scheme must be "Huge APP"
+
+The default 4MB partition scheme only gives the app ~1.2MB of flash. With
+ESP32-audioI2S's MP3 decoder tables plus the WiFi/TLS stack, this sketch builds to
+~1.85MB and won't fit — you'll get `Sketch too big` / `text section exceeds available
+space` at compile time, before you ever get to upload.
+
+Set **Tools → Partition Scheme → "Huge APP (3MB No OTA/1MB SPIFFS)"**. That gives a 3MB
+app partition; the sketch uses about 58% of it.
 
 > ⚠️ This is a public repo. `WIFI_SSID` / `WIFI_PASSWORD` are placeholders in the committed
 > sketch — take care not to commit your real credentials once you fill them in.
@@ -112,23 +125,23 @@ certainly the XSMT jumper, not the code and not the wiring.
 | Audio stutters | `WiFi.setSleep(false)` removed, or `audio.loop()` being throttled |
 | Radio silently offline after a Wi-Fi drop | `WiFi.setAutoReconnect(true)` reintroduced |
 
-### If `esp_task_wdt_init(30, true)` won't compile
+### Watchdog API depends on your installed core version
 
-That two-argument form is the ESP-IDF 4.x / arduino-esp32 2.x API. On arduino-esp32 core
-3.x (ESP-IDF 5.x) the function takes a config struct instead:
+The sketch uses `esp_task_wdt_reconfigure()` with a config struct, which is the
+arduino-esp32 core 3.x (ESP-IDF 5.x) API. On this core, the TWDT is already
+auto-initialized at boot with a default 5s timeout, so it must be *reconfigured*, not
+re-initialized — calling `esp_task_wdt_init()` again fails.
+
+If you're on arduino-esp32 core 2.x (ESP-IDF 4.x) instead, switch to the older two-argument
+form:
 
 ```cpp
-esp_task_wdt_config_t wdt_cfg = {
-  .timeout_ms = 30000,
-  .idle_core_mask = 0,
-  .trigger_panic = true,
-};
-esp_task_wdt_reconfigure(&wdt_cfg);   // the TWDT is already initialised by the core
+esp_task_wdt_init(30, true); // 30s timeout, panic (reset) on trigger
 esp_task_wdt_add(NULL);
 ```
 
-Untested here — the sketch targets the 2.x API. If you move to core 3.x, verify the
-watchdog actually resets the board before trusting it as a backstop.
+Check **Tools → Board → Boards Manager → esp32** for your installed version if you're not
+sure which API you need.
 
 ## Hard constraints
 

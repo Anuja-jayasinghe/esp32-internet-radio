@@ -21,8 +21,8 @@
 #include <esp_task_wdt.h>
 
 // ---------- User configuration ----------
-const char* WIFI_SSID     = "YOUR_WIFI_SSID";
-const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
+const char* WIFI_SSID     = "Area_34";
+const char* WIFI_PASSWORD = "Tele@slt@4567";
 
 // Trailing semicolon is required to bypass the Shoutcast browser/admin redirect.
 const char* STREAM_URL = "http://uk14freenew.listen2myradio.com:20718/;";
@@ -77,8 +77,15 @@ void setup() {
   Serial.println("\nESP32 internet radio starting...");
 
   // Hardware watchdog: backstop against firmware lockups.
-  esp_task_wdt_init(30, true); // 30s timeout, panic (reset) on trigger
-  esp_task_wdt_add(NULL);
+  // arduino-esp32 core 3.x (IDF 5.x) auto-initializes the TWDT at boot with a default
+  // 5s timeout, so it must be RE-configured here, not re-initialized.
+  esp_task_wdt_config_t wdt_cfg = {
+    .timeout_ms = 30000,
+    .idle_core_mask = 0,
+    .trigger_panic = true,
+  };
+  esp_task_wdt_reconfigure(&wdt_cfg);
+  esp_task_wdt_add(NULL); // loop task isn't auto-subscribed; this must stay
 
   // Avoid Wi-Fi power-save related audio stutter.
   WiFi.setSleep(false);
