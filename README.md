@@ -136,6 +136,21 @@ with a silent radio nobody notices.
 If you get all the way to scrolling track titles and still hear nothing, it is almost
 certainly the XSMT jumper, not the code and not the wiring.
 
+### Isolating a DAC/wiring problem from a software problem
+
+`firmware/i2s_dac_test/i2s_dac_test.ino` is a standalone sketch that plays a continuous
+440Hz tone over I2S — no Wi-Fi, no streaming, no ESP32-audioI2S library. Flash this first
+if you're not sure whether silence is a hardware problem (wiring, SCK bridge, XSMT jumper)
+or a software one (stream/decoder).
+
+- **Tone plays cleanly** → the DAC and wiring are good; go debug the main sketch's
+  Wi-Fi/stream path.
+- **Still silent** → it's the DAC board: recheck the SCK-to-GND bridge and the XSMT
+  jumper before touching any code.
+
+It uses the same pin mapping as the main sketch (`GPIO25`→LCK, `GPIO27`→DIN,
+`GPIO26`→BCK) and needs no extra library — `ESP_I2S` ships with the esp32 Arduino core.
+
 ## Troubleshooting
 
 | Symptom | Likely cause |
