@@ -41,8 +41,10 @@ Full detail, the diagram, and the reasoning: **[docs/wiring.md](docs/wiring.md)*
 
 1. Install the [Arduino IDE](https://www.arduino.cc/en/software) and add ESP32 board
    support (Boards Manager → `esp32` by Espressif Systems).
-2. Install **ESP32-audioI2S** by schreibfaul1 — Library Manager, or clone
-   <https://github.com/schreibfaul1/ESP32-audioI2S> into your Arduino `libraries/` folder.
+2. Install **ESP32-audioI2S** by schreibfaul1, **version 3.2.1** — Library Manager (pick the
+   version explicitly), or clone <https://github.com/schreibfaul1/ESP32-audioI2S> and check
+   out the `3.2.1` tag into your Arduino `libraries/` folder. See below — do not install
+   latest.
 3. Open `firmware/esp32_internet_radio/esp32_internet_radio.ino`.
 4. Fill in `WIFI_SSID` and `WIFI_PASSWORD`, and set `STREAM_URL` if you want a different
    station.
@@ -59,7 +61,26 @@ ESP32-audioI2S's MP3 decoder tables plus the WiFi/TLS stack, this sketch builds 
 space` at compile time, before you ever get to upload.
 
 Set **Tools → Partition Scheme → "Huge APP (3MB No OTA/1MB SPIFFS)"**. That gives a 3MB
-app partition; the sketch uses about 58% of it.
+app partition; the sketch uses about 44% of it (with library version 3.2.1, below).
+
+### Library version is pinned at 3.2.1 — do not install latest
+
+Starting at **ESP32-audioI2S 3.4.0**, and still true in the current 4.0.0, the library
+states **"PSRAM is mandatory"** and allocates its input ring buffer accordingly (~700KB).
+The NodeMCU DevKit V1 in this build is a plain WROOM-32 module — **no PSRAM** — so on 3.4.0+
+you'll boot, connect to Wi-Fi, connect to the stream, and then immediately crash with:
+
+```
+OOM: failed to allocate 720896 bytes for AudioBuffer
+```
+
+**Version 3.2.1** is the last release before that requirement, and it degrades gracefully:
+it tries PSRAM first, and falls back to a 16KB buffer in internal RAM when none is found —
+exactly this board's situation. Compiles to 44% flash / 19% RAM on this sketch.
+
+If you ever move to a PSRAM-equipped board (ESP32-S3 with PSRAM, WROVER, etc.), upgrading
+to latest becomes an option worth revisiting — but stay on 3.2.1 for the plain WROOM-32
+DevKit V1 this project targets.
 
 > ⚠️ This is a public repo. `WIFI_SSID` / `WIFI_PASSWORD` are placeholders in the committed
 > sketch — take care not to commit your real credentials once you fill them in.
@@ -124,6 +145,7 @@ certainly the XSMT jumper, not the code and not the wiring.
 | Stream won't connect | Trailing `;` missing from `STREAM_URL` |
 | Audio stutters | `WiFi.setSleep(false)` removed, or `audio.loop()` being throttled |
 | Radio silently offline after a Wi-Fi drop | `WiFi.setAutoReconnect(true)` reintroduced |
+| `OOM: failed to allocate 720896 bytes for AudioBuffer` right after stream connect | ESP32-audioI2S 3.4.0+ installed — this board has no PSRAM, pin the library to 3.2.1 |
 
 ### Watchdog API depends on your installed core version
 
