@@ -151,6 +151,53 @@ or a software one (stream/decoder).
 It uses the same pin mapping as the main sketch (`GPIO25`→LCK, `GPIO27`→DIN,
 `GPIO26`→BCK) and needs no extra library — `ESP_I2S` ships with the esp32 Arduino core.
 
+## Current status (2026-09-13): paused, no audio output yet
+
+Software side is fully confirmed working: USB/serial (CP2102, appears as a COM port once
+the driver is installed), Wi-Fi connect, and Shoutcast stream connect + MP3 decode all
+verified via serial log with the main sketch. `firmware/i2s_dac_test` (a raw I2S tone, no
+Wi-Fi, no ESP32-audioI2S) was also silent, which rules out software/streaming entirely —
+this is purely a DAC-board hardware problem.
+
+**What's been found and fixed:**
+- An earlier solder mistake bridged the `FLT`/`DEMP`/`XSMT` (`H1L`/`H2L`/`H3L`) jumper pads
+  together — cleaned up and re-isolated.
+- Chip confirmed genuine: TI `PCM5102A` (Burr-Brown "BB" marking), not a clone part.
+
+**Current leading suspect, not yet confirmed:** the physical header pin order on this
+board is `VIN — GND — LCK — DIN — BCK — SCK` (see [docs/wiring.md](docs/wiring.md)) — `GND`
+and `SCK` are **4 positions apart, not adjacent**. `BCK` is `SCK`'s actual physical
+neighbor. Photos of the attempted SCK→GND bridge look like they may have landed on
+`SCK`↔`BCK` instead. Per the TI PCM510xA datasheet (SLAS859C, §9.3.5.3 and §11.5.2): the
+internal PLL only starts if `SCK` sits at a **clean, static ground level** while `BCK`/
+`LRCK` run; a clock error on `SCK`/`BCK`/`LRCK` puts the chip into standby with **the DAC
+and line driver powered off** — which would produce exactly the total silence seen in
+every test.
+
+A continuity check came back beeping on **both** `SCK`↔`BCK` and `SCK`↔`GND`, which is
+inconclusive — the PCM5102A's pins have internal ESD protection diodes to ground that can
+trigger a continuity beeper without an actual copper bridge. Distinguishing a real short
+from a diode artifact needs **resistance (Ω) or diode-test mode, board fully unpowered**,
+not just continuity beep.
+
+**Next steps, in order, whenever this resumes:**
+1. Board unpowered. Multimeter in **resistance or diode-test mode** (not continuity beep):
+   measure `SCK`↔`BCK` and `SCK`↔`GND`. A real short reads ~0Ω; an ESD-diode path reads
+   open (resistance mode) or ~0.4–0.7V (diode mode).
+2. Whichever pin `SCK` is actually shorted to, desolder it clean. Since `GND` is 4 pins
+   away from `SCK` on this header (not adjacent), the fix is a short **insulated** wire
+   from `SCK` to `GND`, routed clear of `LCK`/`DIN`/`BCK` — not a simple adjacent blob.
+3. Separately, with the board powered, measure the `XSMT` (`H3L`) pad voltage directly
+   (black probe on `GND`, red on `H3L`): expect ~3.3V for unmuted, ~0V means it still
+   needs to move. This measurement was requested repeatedly during bench testing but
+   never actually obtained — it's still an open question.
+4. Re-test with `firmware/i2s_dac_test` first (simplest possible signal) before going
+   back to the full radio sketch.
+5. If XSMT is fiddly to get right, the datasheet (§9.3.3) explicitly sanctions wiring it
+   **permanently to AVDD (3.3V)** instead of jumpering it, eliminating that variable
+   entirely: *"In systems where XSMT is not required, it can be directly connected to
+   AVDD."*
+
 ## Troubleshooting
 
 | Symptom | Likely cause |
